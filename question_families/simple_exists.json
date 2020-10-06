@@ -1,0 +1,20 @@
+{
+    "constraints": [],
+    "program": [
+        "exists",
+        [
+            "scene",
+            "obj1",
+            "attrs1"
+        ]
+    ],
+    "templates": [
+        "Is there a <attrs1> <obj1>?",
+        "Do you see a <attrs1> <obj1>?",
+        "Are there any <attrs1> <obj1> in this photo?"
+    ],
+    "tokens": [
+        "obj1",
+        "attrs1"
+    ]
+}
