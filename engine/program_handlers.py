@@ -1,3 +1,7 @@
+from collections import defaultdict
+from . import utils
+
+
 def terminal(is_terminal):
     """
     Decorator for handler functions, to specify if function can be terminal or not.
@@ -42,3 +46,42 @@ class Handler:
                 if attributes.issubset(frozenset(obj['attributes'])):
                     return True
         return False
+
+    @terminal(True)
+    def count(self, scene, obj_name, attributes):
+        """
+        Returns the number (int) of obj_name with attributes found in scene.
+        """
+        count = 0
+        for obj_id, obj_data in scene['objects'].items():
+            if obj_name == obj_data['name']  and attributes.issubset(set(obj_data['attributes'])):
+                count += 1
+        return count
+
+    @terminal(True)
+    def color(self, scene, obj_name, attributes):
+        """
+        Returns color of object.
+        """
+        attr_map = utils.get_attribute_map(scene['objects'])
+        objs = attr_map[(obj_name, attributes)]
+        if len(objs) != 1:
+            raise ValueError(f'FIXME: No constraints enforced for color.')
+        obj_id = list(objs)[0]
+        attributes = scene['objects'][obj_id]['attributes']
+        color = utils.filter_color(attributes)
+        assert len(color) == 1, ValueError(f'No color attribute found for object: {attributes} {obj_name}.')
+        return color[0]
+
+    @terminal(False)
+    def related_objs(self, scene, obj_name, rel_name):
+        rel_map = utils.get_relations_map(scene['objects'])
+        objs = rel_map[(obj_name, frozenset([rel_name]))]
+        if len(objs) != 1:
+            raise ValueError(f'FIXME: No constraints enforced for related_objs.')
+        obj_id = list(objs)[0]
+        relations = list(filter(lambda x: x['name'] == rel_name, scene['objects'][obj_id]['relations']))
+
+        rel_objs_ids = list(map(lambda x: x['object'], relations))
+        rel_objs = {'objects': {idx: scene['objects'][idx] for idx in rel_objs_ids}}
+        return rel_objs

@@ -1,0 +1,27 @@
+{
+    "constraints": [],
+    "program": [
+        "count",
+        [
+            [
+                "related_objs",
+                [
+                    "scene",
+                    "obj2",
+                    "rel2"
+                ]
+            ],
+            "obj1",
+            "attrs1"
+        ]
+    ],
+    "templates": [
+        "How many <attrs1> <obj1> are there <rel2> <obj2>?"
+    ],
+    "tokens": [
+        "obj1",
+        "attrs1",
+        "obj2",
+        "rel2"
+    ]
+}

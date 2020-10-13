@@ -19,4 +19,6 @@ if __name__ == '__main__':
 
     for scene_id, scene in graphs.items():
         for question in questions:
+            if len(question['tokens']) != 4:
+                continue
             generator.generate_questions(scene, question)

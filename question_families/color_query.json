@@ -1,0 +1,24 @@
+{
+    "constraints": [
+        "unique(obj1)",
+        "exclude_color(attrs1)",
+        "number(attrs1, [0, 1])"
+    ],
+    "program": [
+        "exists",
+        [
+            "scene",
+            "obj1",
+            "attrs1"
+        ]
+    ],
+    "templates": [
+        "What color is <attrs1> <obj1>?",
+        "Is the <attrs1> <obj1> <color1>?"
+    ],
+    "tokens": [
+        "obj1",
+        "attrs1",
+        "color1"
+    ]
+}

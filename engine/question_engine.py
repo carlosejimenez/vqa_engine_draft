@@ -21,12 +21,16 @@ import re
 from random import choice
 
 from collections import defaultdict
-from itertools import chain, combinations, combinations_with_replacement, product
+from itertools import combinations, product
 from .program_handlers import Handler
+from . import utils
 
 
 def assign_tokens(objects, token_set, constraints):
-    all_assignments = []
+    """
+    Returns a list of all possible token assignments (dictionaries).
+    """
+    all_assignments = set()  # use set to absorb duplicates.
     for obj_ids in combinations(list(objects.keys()), len(token_set)):
         assignments = dict()
         for i in range(len(token_set)):
@@ -37,30 +41,18 @@ def assign_tokens(objects, token_set, constraints):
                 if token == 'obj':
                     val = [obj_i['name'], ]
                 elif token == 'attrs':
-                    val = list(map(frozenset, powerset(obj_i['attributes'])))  # TODO: this is a test
+                    val = list(map(frozenset, utils.powerset(obj_i['attributes'])))
+                elif token == 'rel':
+                    val = list(set(map(lambda x: x.get('name'), obj_i['relations'])))
+                    # raise NotImplementedError('rel not implemented yet!')
                 else:
                     raise ValueError(f'Token name unknown: {token}')
                 assignments[key] = val
         key_list = list(assignments.keys())
         assignment_values = product(*[assignments[key] for key in key_list])
         for assignment in assignment_values:
-            all_assignments.append(dict(zip(key_list, assignment)))
-    return all_assignments
-
-
-def powerset(x_iterable):
-    return list(chain.from_iterable(combinations(x_iterable, r) for r in range(len(x_iterable) + 1)))
-
-
-def get_attribute_map(obj_set):
-    attr_obj_map = defaultdict(set)
-    for obj_id, obj_data in obj_set.items():
-        name = obj_data['name']  # string
-        all_attrs = set(obj_data['attributes'])
-        for attrs in powerset(all_attrs):
-            key = (name, frozenset(attrs))  # (obj_name, {green, shiny, ...})
-            attr_obj_map[key].add(obj_id)
-    return dict(attr_obj_map)
+            all_assignments.add(zip(key_list, assignment))
+    return list(map(dict, all_assignments))
 
 
 class QGenerator:
@@ -83,9 +75,16 @@ class QGenerator:
         program = question_family['program']
         templates = question_family['templates']
         token_assignments = assign_tokens(scene['objects'], token_sets, constraints)
+        qa_pairs = []
         for template, assignment in product(templates, token_assignments):
-            text = self.expand_text_template(template, assignment)
-            print(f'{text}: {"Yes" if self.handler.get_answer(scene, program, assignment) else "No"}')
+            try:
+                text = self.expand_text_template(template, assignment)
+                answer = self.handler.get_answer(scene, program, assignment)
+                qa_pairs.append((text, answer))
+#                 print(f'{text}: {answer}')
+            except Exception as e:
+                print(e)
+        return qa_pairs
 
     @staticmethod
     def expand_text_template(template, assignment):

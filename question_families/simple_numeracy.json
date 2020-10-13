@@ -1,0 +1,19 @@
+{
+    "constraints": [],
+    "program": [
+        "count",
+        [
+            "scene",
+            "obj1",
+            "attrs1"
+        ]
+    ],
+    "templates": [
+        "What number of <attrs1> <obj1> are there?",
+        "How many <attrs1> <obj1> are there?"
+    ],
+    "tokens": [
+        "obj1",
+        "attrs1"
+    ]
+}
