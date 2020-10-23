@@ -1,39 +1,149 @@
 #!/usr/bin/env python
 # coding: utf-8
+
+# In[1]:
+
+
 import json
 import engine
-import argparse
+from IPython.display import display
+from PIL import Image
 from pprint import pprint as print
 from tqdm import tqdm
 
 
-def main(question_family, scenes_file, short=False): 
-    generator = engine.QGenerator()
-    data_prefix = scenes_file.split('.')[0].split('_')[0]
-    scenes = json.load(open(scenes_file, 'r'))
-    if short:
-        print(f'Truncating scene for testing.')
-        scenes = {k: scenes[k] for k in list(scenes.keys())[:5]}
-    question = json.load(open(f'question_families/{question_family}.json', 'r'))
-    # program = question['program']
-    # text_templates = question['templates']
-    filename = f'{data_prefix}_{question_family}.txt'
-    with open(filename, 'w+') as f:
-        print(f'Starting {filename} ...')
-        for scene_id, scene in tqdm(scenes.items()):
-            qa_pairs = generator.generate_questions(scene, question)
-            qa_pairs = list(map(lambda x: (scene_id, *x), qa_pairs))
-            f.write('\n'.join(list(map(json.dumps, qa_pairs))))
-            del scene
-    print(f'Completed writing {filename}')
+# In[41]:
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--question-family', type=str, required=True, help=f'Name of question family, in ./question_'
-                                                                           f'families. Not a filepath. Not a filename.')
-    parser.add_argument('--scenes-file', type=str, required=True, help=f'Filepath to scenes JSON file.')
-    parser.add_argument('--test', action='store_true', help=f'Only run on up to 5 scenes, for testing purposes.')
+generator = engine.QGenerator()
+data_prefix = 'val'
+scenes = json.load(open(f'{data_prefix}_sceneGraphs.json', 'r'))
+img_ids = set(json.load(open('valid_img_ids.json')))
+scenes = {k: scenes[k] for k in list(scenes.keys()) for k in img_ids}
 
-    args = parser.parse_args()
-    main(args.question_family, args.scenes_file, args.test)
+
+# In[42]:
+
+
+assert set(scenes.keys()) == img_ids
+
+
+# In[77]:
+
+
+question_family = 'related_numeracy'
+question = json.load(open(f'question_families/{question_family}.json', 'r'))
+program = question['program']
+text_templates = question['templates']
+
+
+# In[78]:
+
+
+# scene_id, scene = list(scenes.items())[0]
+# print(list(map(lambda x: (x.get('name'), x.get('attributes')), scene['objects'].values())))
+
+
+# In[80]:
+
+
+print(question['templates'])
+
+
+# In[81]:
+
+
+# assignment = {'obj1': 'man', 'attrs1': frozenset([])}
+# print(generator.expand_text_template(text_templates[0], assignment))
+# print('Yes' if generator.handler.get_answer(scene, program, assignment) else 'No')
+
+
+# In[82]:
+
+
+# assignment = {'obj1': 'man', 'attrs1': frozenset(['tall'])}
+# print(generator.expand_text_template(text_templates[1], assignment))
+# print('Yes' if generator.handler.get_answer(scene, program, assignment) else 'No')
+
+
+# In[83]:
+
+
+# assignment = {'obj1': 'bike', 'attrs1': frozenset(['white'])}
+# print(generator.expand_text_template(text_templates[2], assignment))
+# print('Yes' if generator.handler.get_answer(scene, program, assignment) else 'No')
+
+
+# In[84]:
+
+
+# question = json.load(open(f'question_families/simple_numeracy.json', 'r'))
+# program = question['program']
+# text_templates = question['templates']
+
+
+# In[85]:
+
+
+# assignment = {'obj1': 'sign', 'attrs1': frozenset(['blue'])}
+# print(generator.expand_text_template(text_templates[0], assignment))
+# print(generator.handler.get_answer(scene, program, assignment))
+
+
+# In[86]:
+
+
+# assignment = {'obj1': 'sign', 'attrs1': frozenset(['red'])}
+# print(generator.expand_text_template(text_templates[1], assignment))
+# print(generator.handler.get_answer(scene, program, assignment))
+
+
+# In[87]:
+
+
+# display(Image.open(f'images/{scene_id}.jpg'))
+
+
+# In[88]:
+
+
+question
+
+
+# In[89]:
+
+
+# with open(f'{data_prefix}_{question_family}.txt', 'w+') as f:
+d_names = ['question_id', 'img_id', 'label', 'sent']
+bool_binary = {True: 'yes', False: 'no'}
+all_questions = []
+for img_id, scene in tqdm(scenes.items()):
+#     qa_pairs = list(map(lambda x: dict(zip(d_names, (img_id, *x))), qa_pairs))
+    for ix, (question_type, sent, answer) in enumerate(generator.generate_questions(scene, question)):
+        q_id = str(img_id) + str(ix).zfill(9)
+        answer_dict = {bool_binary[answer]: 1.0}
+        question_dict = {'img_id': img_id,
+                         'label': answer_dict,
+                         'question_id': q_id,
+                         'sent': sent,
+                         'question_type': question_type}
+        all_questions.append(question_dict)
+
+
+# In[ ]:
+
+
+json.dump(all_questions, open(f'{question_family}.json', 'w+'))
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+

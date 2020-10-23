@@ -1,12 +1,22 @@
 # from pattern.en import wordnet
-
+# from math import inf
+import json
 from collections import defaultdict
-from itertools import chain, combinations
+from itertools import chain, combinations, product
+
+# attribute_vocabulary = json.load(open('../vocabs/train_sceneGraphs_attributes_vocab.json', 'r'))
+# object_vocabulary = json.load(open('../vocabs/train_sceneGraphs_objects_vocab.json', 'r'))
+train_colors = {'translucent', 'gray', 'chrome', 'dark brown', 'blue', 'navy', 'pink', 'teal', 'calico', 'tan',
+                'blond', 'plaid', 'yellow', 'red', 'silver', 'brass', 'cream colored', 'dark blue',
+                'black and white', 'khaki', 'dark colored', 'purple', 'beige', 'orange', 'black', 'bronze', 'green',
+                'maroon', 'light brown', 'white', 'light blue', 'rainbow colored', 'gold', 'brown', 'light colored'}
 
 
-def powerset(x_iterable):
+def powerset(x_iterable, max_depth=None):
     x_set = set(x_iterable)
-    return list(chain.from_iterable(combinations(x_set, r) for r in range(len(x_set) + 1)))
+    if max_depth == None:
+        max_depth = len(x_set)
+    return list(chain.from_iterable(combinations(x_set, r) for r in range(max_depth + 1)))
 
 
 def get_attribute_map(obj_set):
@@ -31,7 +41,39 @@ def get_relations_map(obj_set):
     return dict(rel_obj_map)
 
 
-# From checklist/text_generation.py #########################
+def param_grid(token_dict):
+    for p in token_dict:
+        items = sorted(p.items())
+        if not items:
+            yield {}
+        else:
+            keys, values = zip(*items)
+            for v in product(*values):
+                params = dict(zip(keys, v))
+                yield params
+
+
+def get_assignments(token_dict, max_depth=1):
+    for token in token_dict:
+        if token.startswith('attrs'):
+            token_dict[token] = list(map(lambda x: ' '.join(x), powerset(token_dict[token], max_depth)))
+    return list(param_grid([token_dict]))
+
+
+def get_color(obj):
+    attributes = set(obj['attributes'])
+    colors = attributes.intersection(train_colors)
+    return frozenset(colors)
+
+
+
+## From checklist/text_generation.py #########################
+# def all_possible_hypernyms(word, pos=None, depth=None):
+#     ret = []
+#     for syn in all_synsets(word, pos=pos):
+#         ret.extend([y for x in syn.hypernyms(recursive=True, depth=depth) for y in x.senses])
+#     return clean_senses(ret)
+#
 # def all_synsets(word, pos=None):
 #     map = {
 #         'NOUN': wordnet.NOUN,

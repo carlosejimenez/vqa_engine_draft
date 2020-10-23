@@ -1,11 +1,11 @@
 {
+    "name": "color_query",
     "constraints": [
         "unique(obj1)",
-        "exclude_color(attrs1)",
-        "number(attrs1, [0, 1])"
+        "exclude_color(attrs1)"
     ],
     "program": [
-        "exists",
+        "color",
         [
             "scene",
             "obj1",
@@ -13,7 +13,7 @@
         ]
     ],
     "templates": [
-        "What color is <attrs1> <obj1>?",
+        "What color is the <attrs1> <obj1>?",
         "Is the <attrs1> <obj1> <color1>?"
     ],
     "tokens": [

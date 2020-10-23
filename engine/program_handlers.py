@@ -66,10 +66,10 @@ class Handler:
         attr_map = utils.get_attribute_map(scene['objects'])
         objs = attr_map[(obj_name, attributes)]
         if len(objs) != 1:
-            raise ValueError(f'FIXME: No constraints enforced for color.')
+            raise ValueError(f'FIXME: Constraints enforced for color.')
         obj_id = list(objs)[0]
-        attributes = scene['objects'][obj_id]['attributes']
-        color = utils.filter_color(attributes)
+        obj = scene['objects'][obj_id]
+        color = list(utils.get_color(obj))
         assert len(color) == 1, ValueError(f'No color attribute found for object: {attributes} {obj_name}.')
         return color[0]
 
@@ -78,7 +78,7 @@ class Handler:
         rel_map = utils.get_relations_map(scene['objects'])
         objs = rel_map[(obj_name, frozenset([rel_name]))]
         if len(objs) != 1:
-            raise ValueError(f'FIXME: No constraints enforced for related_objs.')
+            raise ValueError(f'FIXME: Constraints enforced for related_objs.')
         obj_id = list(objs)[0]
         relations = list(filter(lambda x: x['name'] == rel_name, scene['objects'][obj_id]['relations']))
 

@@ -37,13 +37,22 @@ def main(scenes_file, vocab_type):
     #         raise ValueError()
 
     get_set_func = {'attributes': get_attribute_names, 'objects': get_object_names}
+    synset_file = {'attributes': 'attribute_synsets.json', 'objects': 'object_synsets.json'}
+    all_synsets = json.load(open(synset_file[vocab_type], 'r'))
 
     scenes = json.load(open(scenes_file, 'r'))
     vocab = set()
     for scene_id, scene in scenes.items():
         vocab = vocab.union(get_set_func[vocab_type](scene))
+    vocab_synsets = {}
+    for word in vocab:
+        try:
+            synset = all_synsets[word]
+        except KeyError:
+            synset = None
+        vocab_synsets[word] = synset
 
-    json.dump(list(vocab), open(filename, 'w'), indent=4)
+    json.dump(vocab_synsets, open(filename, 'w'), indent=4)
     print(f'Completed writing {filename}')
 
 
@@ -52,6 +61,8 @@ if __name__ == '__main__':
     parser.add_argument('--scenes-file', type=str, required=True, help=f'Filepath to scenes JSON file.')
     parser.add_argument('--attributes', action='store_true', help=f'When included, saves attributes vocab.')
     parser.add_argument('--objects', action='store_true', help=f'When included, saves objects vocab.')
+    parser.add_argument('--synsets-dir', type=str, default='.', help='Directory where Visual Genome JSON synset files '
+                                                                     'are.')
     # parser.add_argument('--output-filename', type=str, default=None, required=False, help='Vocabulary output '
     #                                                                                       'filename.')
 

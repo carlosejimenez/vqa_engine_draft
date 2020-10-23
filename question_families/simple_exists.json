@@ -1,4 +1,5 @@
 {
+    "name": "simple_exists",
     "constraints": [],
     "program": [
         "exists",

@@ -23,6 +23,7 @@ from random import choice
 from collections import defaultdict
 from itertools import combinations, product
 from .program_handlers import Handler
+from .constraint_handler import ConstraintHandler
 from . import utils
 
 
@@ -30,14 +31,15 @@ def assign_tokens(objects, token_set, constraints):
     """
     Returns a list of all possible token assignments (dictionaries).
     """
+    constraint_handler = ConstraintHandler(objects)
     all_assignments = set()  # use set to absorb duplicates.
     for obj_ids in combinations(list(objects.keys()), len(token_set)):
         assignments = dict()
         for i in range(len(token_set)):
-            idx = str(i + 1)
+            token_obj_idx = str(i + 1)
             obj_i = objects[obj_ids[i]]
-            for token in token_set[idx]:
-                key = f'{token}{idx}'
+            for token in token_set[token_obj_idx]:
+                key = f'{token}{token_obj_idx}'
                 if token == 'obj':
                     val = [obj_i['name'], ]
                 elif token == 'attrs':
@@ -45,13 +47,19 @@ def assign_tokens(objects, token_set, constraints):
                 elif token == 'rel':
                     val = list(set(map(lambda x: x.get('name'), obj_i['relations'])))
                     # raise NotImplementedError('rel not implemented yet!')
+                elif token == 'color':
+                    # val = [utils.get_color(obj_i), ]  # wrapping list instantiates assignment_values even if
+                                                        # utils.get_color(obj_i) is an empty frozenset.
+                    val = utils.get_color(obj_i)        # Not wrapping instantiates the product of assignment values
+                                                        # with individual elements of val, and only if len(val) != 0
                 else:
                     raise ValueError(f'Token name unknown: {token}')
                 assignments[key] = val
         key_list = list(assignments.keys())
         assignment_values = product(*[assignments[key] for key in key_list])
         for assignment in assignment_values:
-            all_assignments.add(zip(key_list, assignment))
+            if constraint_handler.check_constraints(constraints, dict(zip(key_list, assignment))):
+                all_assignments.add(zip(key_list, assignment))
     return list(map(dict, all_assignments))
 
 
@@ -75,16 +83,18 @@ class QGenerator:
         program = question_family['program']
         templates = question_family['templates']
         token_assignments = assign_tokens(scene['objects'], token_sets, constraints)
-        qa_pairs = []
+        qa_pairs = set()  # FIXME: Set is used to remove duplicates, but there shouldn't be duplicates.
         for template, assignment in product(templates, token_assignments):
             try:
+                template_idx = templates.index(template)
+                question_data = f'{question_family["name"]}-{template_idx}'
                 text = self.expand_text_template(template, assignment)
                 answer = self.handler.get_answer(scene, program, assignment)
-                qa_pairs.append((text, answer))
+                qa_pairs.add((question_data, text, answer))
 #                 print(f'{text}: {answer}')
             except Exception as e:
                 print(e)
-        return qa_pairs
+        return list(qa_pairs)
 
     @staticmethod
     def expand_text_template(template, assignment):
