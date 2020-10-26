@@ -37,6 +37,10 @@ class Handler:
         return getattr(self, root)(*program_args)
 
     @terminal(True)
+    def equal(self, val1, val2):
+        return val1 == val2
+
+    @terminal(True)
     def exists(self, scene, obj_name, attributes):
         """
         Returns true if there is an object in scene with name == obj_name, and its attributes are a superset of attributes.

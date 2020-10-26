@@ -31,7 +31,7 @@ assert set(scenes.keys()) == img_ids
 # In[77]:
 
 
-question_family = 'related_numeracy'
+question_family = 'color_query_bool'
 question = json.load(open(f'question_families/{question_family}.json', 'r'))
 program = question['program']
 text_templates = question['templates']
