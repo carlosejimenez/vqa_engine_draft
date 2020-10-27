@@ -42,6 +42,7 @@ def assign_tokens(objects, token_set, constraints):
                 key = f'{token}{token_obj_idx}'
                 if token == 'obj':
                     val = [obj_i['name'], ]
+                    assignments[f'{key}_id'] = [obj_ids[i], ]  # track object id
                 elif token == 'attrs':
                     val = list(map(frozenset, utils.powerset(obj_i['attributes'])))
                 elif token == 'rel':
@@ -85,15 +86,15 @@ class QGenerator:
         token_assignments = assign_tokens(scene['objects'], token_sets, constraints)
         qa_pairs = set()  # FIXME: Set is used to remove duplicates, but there shouldn't be duplicates.
         for template, assignment in product(templates, token_assignments):
-            try:
-                template_idx = templates.index(template)
-                question_data = f'{question_family["name"]}-{template_idx}'
-                text = self.expand_text_template(template, assignment)
-                answer = self.handler.get_answer(scene, program, assignment)
-                qa_pairs.add((question_data, text, answer))
+            # try:
+            template_idx = templates.index(template)
+            question_data = f'{question_family["name"]}-{template_idx}'
+            text = self.expand_text_template(template, assignment)
+            answer = self.handler.get_answer(scene, program, assignment)
+            qa_pairs.add((question_data, text, answer, frozenset(assignment.items())))
 #                 print(f'{text}: {answer}')
-            except Exception as e:
-                print(e)
+#             except Exception as e:
+#                 print(e)
         return list(qa_pairs)
 
     @staticmethod

@@ -119,13 +119,20 @@ bool_binary = {True: 'yes', False: 'no'}
 all_questions = []
 for img_id, scene in tqdm(scenes.items()):
 #     qa_pairs = list(map(lambda x: dict(zip(d_names, (img_id, *x))), qa_pairs))
-    for ix, (question_type, sent, answer) in enumerate(generator.generate_questions(scene, question)):
-        q_id = str(img_id) + str(ix).zfill(9)
-        answer_dict = {bool_binary[answer]: 1.0}
+    for ix, (question_type, sent, answer, assignment) in enumerate(generator.generate_questions(scene, question)):
+        q_id = str(img_id) + str(len(all_questions)).zfill(9)
+        answer_dict = {answer: 1.0}
+        obj = scene['objects'][dict(assignment)['obj1_id']]
+        assignment = dict(assignment)
+        for arg in assignment:
+            if type(assignment[arg]) == frozenset:
+                assignment[arg] = sorted(assignment[arg])
+        assignment = sorted(assignment.items())
         question_dict = {'img_id': img_id,
                          'label': answer_dict,
                          'question_id': q_id,
                          'sent': sent,
+                         'assignment': assignment,
                          'question_type': question_type}
         all_questions.append(question_dict)
 

@@ -22,6 +22,38 @@ class Handler:
         """
         assert type(program_tree) in [tuple, list], TypeError(f'Received type {type(program_tree)} instead of tuple.')
         assert len(program_tree) == 2, AssertionError(f'Format error. Malformed branch.')
+
+        stack = [(program_tree, [])]
+        # token_assignment['scene'] = scene
+        results = []
+        while len(stack) > 0:
+            evaluate = True
+            (func, args), program_args = stack.pop()
+            for ix, arg in enumerate(args):
+                if type(arg) in [tuple, list]:
+                    if len(results) > 0:
+                        val = results.pop()
+                        program_args.append(val)
+                    else:
+                        stack.append(((func, args), program_args))
+                        stack.append((arg, []))
+                        evaluate = False
+                        break
+                else:
+                    assert type(arg) is str, TypeError(f'Argument type not tuple or string.')
+                    if arg == 'scene':
+                        val = scene
+                    else:
+                        val = token_assignment[arg]
+                    program_args.append(val)
+            if evaluate:
+                result = getattr(self, func)(*program_args)
+                results.append(result)
+        return results.pop()
+
+
+
+
         root, args = program_tree
         program_args = []
         token_assignment['scene'] = scene  # TODO: Remove from calls somehow.
@@ -74,8 +106,11 @@ class Handler:
         obj_id = list(objs)[0]
         obj = scene['objects'][obj_id]
         color = list(utils.get_color(obj))
-        assert len(color) == 1, ValueError(f'No color attribute found for object: {attributes} {obj_name}.')
-        return color[0]
+        if len(color) == 1:
+            return color[0]
+        # assert len(color) == 1, ValueError(f'No color attribute found for object: {attributes} {obj_name}.')
+        else:
+            return None
 
     @terminal(False)
     def related_objs(self, scene, obj_name, rel_name):
