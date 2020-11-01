@@ -1,6 +1,8 @@
 {
     "name": "simple_numeracy",
-    "constraints": [],
+    "constraints": [
+        "max_length(attrs1, 2)"
+    ],
     "program": [
         "count",
         [

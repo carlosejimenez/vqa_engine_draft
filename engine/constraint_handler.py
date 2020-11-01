@@ -2,6 +2,16 @@ import re
 from . import utils
 
 
+def terminal(is_terminal):
+    """
+    Decorator for handler functions, to specify if function can be terminal or not.
+    """
+    def wrapper(func):
+        func.terminal = is_terminal
+        return func
+    return wrapper
+
+
 class ConstraintHandler:
     def __init__(self, objects):
         self.objects = objects
@@ -10,36 +20,25 @@ class ConstraintHandler:
         for constraint in constraints:
             func, argstr = re.match(r'^([a-zA-Z]\w+)\((.*)\)$', constraint).groups()
             args = argstr.replace(' ', '').split(',')
-            keywords = {k: assignment[k] for k in assignment if k in args}
-            if not getattr(self, func)(**keywords):
+            func_args = [assignment[a] if a in assignment.keys() else a for a in args]
+            if not getattr(self, func)(*func_args):
                 return False
         return True
 
-    def unique(self, **kwargs):
+    def unique(self, obj, attrs=None, rel=None):
         # TODO: Implement relation uniqueness too!
-        token_heads, token_nums = list(zip(*list(map(lambda x: re.match(r'^([a-z]+)(\d+)$', x).groups(), kwargs))))
-        # ^ splits token types ('obj', 'attrs', ...) from token numbers.
-        if len(set(token_nums)) != 1:
-            raise AssertionError(f'Unique constraint received mixed object constraint.')
-        token_num = token_nums[0]
-        if 'rel' in token_heads:
-            raise NotImplementedError(f'Unique constraint for relations is not implemented, yet!')
-        obj_token = f'obj{token_num}'
-        if not obj_token in kwargs:
-            AssertionError(f'Unique constraint be related to an object token.')
-        name = kwargs[obj_token]
-        attrs_token = f'attrs{token_num}'
-        attrs = frozenset() if attrs_token not in kwargs else kwargs[attrs_token]
-        detection_count = 0
-        for obj in self.objects.values():
-            if obj['name'] == name:
-                new_attrs = set(obj['attributes'])
+        if attrs is None:
+            attrs = set()
+        detected = 0
+        for obj_i in self.objects.values():
+            if obj_i['name'] == obj:
+                new_attrs = set(obj_i['attributes'])
                 if attrs.issubset(new_attrs):
-                    detection_count += 1
-        return detection_count == 1
+                    detected += 1
+        return detected == 1
 
-    def exclude_color(self, **kwargs):
-        if len(kwargs) != 1:
-            raise ValueError(f'exclude_color only accepts attrs tokens for one object at a time.')
-        attr_list = set(list(kwargs.values())[0])
-        return len(attr_list.intersection(utils.train_colors)) == 0
+    def max_length(self, attrs, max_len):
+        return len(attrs.intersection(utils.train_colors)) <= 0
+
+    def exclude_color(self, attrs):
+        return len(attrs.intersection(utils.train_colors)) == 0

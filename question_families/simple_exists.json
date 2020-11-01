@@ -1,12 +1,18 @@
 {
     "name": "simple_exists",
-    "constraints": [],
-    "program": [
-        "exists",
+    "constraints": [
+        "max_length(attrs1, 2)"
+    ],
+    "program":
+    ["convert_bool",
         [
-            "scene",
-            "obj1",
-            "attrs1"
+            ["exists",
+                [
+                    "scene",
+                    "obj1",
+                    "attrs1"
+                ]
+            ]
         ]
     ],
     "templates": [

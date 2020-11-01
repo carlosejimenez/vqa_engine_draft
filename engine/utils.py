@@ -1,11 +1,16 @@
 # from pattern.en import wordnet
 # from math import inf
+import os
 import json
+import numpy as np
+import random
 from collections import defaultdict
 from itertools import chain, combinations, product
 
-# attribute_vocabulary = json.load(open('../vocabs/train_sceneGraphs_attributes_vocab.json', 'r'))
-# object_vocabulary = json.load(open('../vocabs/train_sceneGraphs_objects_vocab.json', 'r'))
+ROOT_DIR = os.path.join(os.path.dirname(__file__), '..')
+attribute_vocabulary = set(json.load(open(os.path.join(ROOT_DIR, 'vocabs', 'train_sceneGraphs_attributes_vocab.json'),
+                                          'r')))
+object_vocabulary = set(json.load(open(os.path.join(ROOT_DIR, 'vocabs', 'train_sceneGraphs_objects_vocab.json'), 'r')))
 train_colors = {'translucent', 'gray', 'chrome', 'dark brown', 'blue', 'navy', 'pink', 'teal', 'calico', 'tan',
                 'blond', 'plaid', 'yellow', 'red', 'silver', 'brass', 'cream colored', 'dark blue',
                 'black and white', 'khaki', 'dark colored', 'purple', 'beige', 'orange', 'black', 'bronze', 'green',
@@ -27,7 +32,8 @@ def get_attribute_map(obj_set):
         for attrs in powerset(all_attrs):
             key = (name, frozenset(attrs))  # (obj_name, {green, shiny, ...})
             attr_obj_map[key].add(obj_id)
-    return dict(attr_obj_map)
+    # return dict(attr_obj_map)  # TODO: Do we need a proper dict?
+    return attr_obj_map
 
 
 def get_relations_map(obj_set):
@@ -65,6 +71,20 @@ def get_color(obj):
     colors = attributes.intersection(train_colors)
     return frozenset(colors)
 
+
+def get_random_color():
+    colors = random.sample(train_colors, k=1)
+    return frozenset(colors)
+
+
+def get_random_attrs():
+    num_attrs = np.random.choice([1, 2, 3], p=[0.6, 0.3, 0.1])
+    attrs = random.sample(attribute_vocabulary, k=num_attrs)
+    return frozenset(attrs)
+
+
+def get_random_obj_name():
+    return random.choice(list(object_vocabulary))
 
 
 ## From checklist/text_generation.py #########################

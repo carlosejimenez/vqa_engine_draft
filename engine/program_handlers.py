@@ -18,7 +18,7 @@ class Handler:
 
     def get_answer(self, scene, program_tree, token_assignment, verbose=False):
         """
-        Evaluate an expression tree, as {'func_name': [args list]} recursively.
+        Evaluate an expression tree, as ['func_name', [arg1, arg2, ...]] recursively.
         """
         assert type(program_tree) in [tuple, list], TypeError(f'Received type {type(program_tree)} instead of tuple.')
         assert len(program_tree) == 2, AssertionError(f'Format error. Malformed branch.')
@@ -84,6 +84,10 @@ class Handler:
         return False
 
     @terminal(True)
+    def convert_bool(self, val):
+        return {True: 'yes', False: 'no'}[val]
+
+    @terminal(True)
     def count(self, scene, obj_name, attributes):
         """
         Returns the number (int) of obj_name with attributes found in scene.
@@ -102,7 +106,8 @@ class Handler:
         attr_map = utils.get_attribute_map(scene['objects'])
         objs = attr_map[(obj_name, attributes)]
         if len(objs) != 1:
-            raise ValueError(f'FIXME: Constraints enforced for color.')
+            return ''
+            # raise ValueError(f'FIXME: Constraints enforced for color.')
         obj_id = list(objs)[0]
         obj = scene['objects'][obj_id]
         color = list(utils.get_color(obj))

@@ -2,7 +2,8 @@
     "name": "color_query",
     "constraints": [
         "unique(obj1)",
-        "exclude_color(attrs1)"
+        "exclude_color(attrs1)",
+        "max_length(attrs1, 2)"
     ],
     "program": [
         "color",

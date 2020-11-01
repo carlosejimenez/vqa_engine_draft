@@ -33,6 +33,7 @@ def assign_tokens(objects, token_set, constraints):
     """
     constraint_handler = ConstraintHandler(objects)
     all_assignments = set()  # use set to absorb duplicates.
+    all_assignments2 = set()  # use set to absorb duplicates.
     for obj_ids in combinations(list(objects.keys()), len(token_set)):
         assignments = dict()
         for i in range(len(token_set)):
@@ -56,11 +57,52 @@ def assign_tokens(objects, token_set, constraints):
                 else:
                     raise ValueError(f'Token name unknown: {token}')
                 assignments[key] = val
-        key_list = list(assignments.keys())
+        key_list = sorted(assignments.keys())  # sorted ensures assignments are unique when added to all_assignments
         assignment_values = product(*[assignments[key] for key in key_list])
         for assignment in assignment_values:
             if constraint_handler.check_constraints(constraints, dict(zip(key_list, assignment))):
-                all_assignments.add(zip(key_list, assignment))
+                all_assignments.add(tuple(zip(key_list, assignment)))
+    return list(map(dict, all_assignments))
+
+
+def assign_random(objects, token_set, constraints):
+    """
+    Returns a list of all possible token assignments (dictionaries).
+    """
+    constraint_handler = ConstraintHandler(objects)
+    all_assignments = set()  # use set to absorb duplicates.
+    for obj_ids in combinations(list(objects.keys()), len(token_set)):
+        assignments = dict()
+        for i in range(len(token_set)):
+            token_obj_idx = str(i + 1)
+            obj_i = objects[obj_ids[i]]
+            for token in token_set[token_obj_idx]:
+                key = f'{token}{token_obj_idx}'
+                if token == 'obj':
+                    name = utils.get_random_obj_name()
+                    val = [name, ]
+                    # assignments[f'{key}_id'] = [obj_ids[i], ]  # track object id
+                elif token == 'attrs':
+                    attrs = utils.get_random_attrs()
+                    val = list(map(frozenset, utils.powerset(attrs)))
+                elif token == 'rel':
+                    val = list(set(map(lambda x: x.get('name'), obj_i['relations'])))
+                    # raise NotImplementedError('rel not implemented yet!')
+                elif token == 'color':
+                    # val = [utils.get_color(obj_i), ]  # wrapping list instantiates assignment_values even if
+                                                        # utils.get_color(obj_i) is an empty frozenset.
+                    val = utils.get_random_color()  # Not wrapping instantiates the product of assignment values
+                                                         # with individual elements of val, and only if len(val) != 0
+                else:
+                    raise ValueError(f'Token name unknown: {token}')
+                assignments[key] = val
+        key_list = list(assignments.keys())
+        assignment_values = product(*[assignments[key] for key in key_list])
+        for assignment in assignment_values:
+            # if constraint_handler.check_constraints(constraints, dict(zip(key_list, assignment))):
+            # TODO: Constraints pose a problem here, since some constraints won't apply (e.g. unique), but others will
+            # TODO: (e.g. exclude_color)
+            all_assignments.add(zip(key_list, assignment))
     return list(map(dict, all_assignments))
 
 
@@ -92,10 +134,22 @@ class QGenerator:
             text = self.expand_text_template(template, assignment)
             answer = self.handler.get_answer(scene, program, assignment)
             qa_pairs.add((question_data, text, answer, frozenset(assignment.items())))
-#                 print(f'{text}: {answer}')
-#             except Exception as e:
-#                 print(e)
         return list(qa_pairs)
+
+    def generate_assignments(self, scene, tokens, constraints, random=False):
+        objects_present = set(map(lambda x: x['name'], scene['objects'].values()))
+        token_sets = defaultdict(set)
+        for token in tokens:
+            match = re.match(r'^([a-z]+)(\d+)$', token)
+            if not match:
+                assert token == 'scene', AssertionError(f'Unrecognized special token: {token}.')
+            assert len(match.groups()) == 2, AssertionError(f'Malformed input token.')
+            token_type, object_number = match.groups()
+            token_sets[object_number].add(token_type)
+        if random:
+            return assign_random(scene['objects'], token_sets, constraints)
+        else:
+            return assign_tokens(scene['objects'], token_sets, constraints)
 
     @staticmethod
     def expand_text_template(template, assignment):
