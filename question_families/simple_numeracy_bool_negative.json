@@ -1,33 +1,32 @@
 {
-    "name": "color_query_bool",
+    "name": "simple_numeracy_bool_negative",
     "constraints": [
-        "unique(obj1)",
-        "exclude_color(attrs1)",
-        "max_length(attrs1, 2)"
     ],
     "program":
     ["convert_bool",
         [
-            ["member_of",
+            ["equal",
                 [
-                    "color1",
-                    ["colors",
+                    ["count",
                         [
                             "scene",
                             "obj1",
                             "attrs1"
                         ]
-                    ]
+                    ],
+                    "!n1"
                 ]
             ]
         ]
     ],
     "templates": [
-        "Is the <attrs1> <obj1> <color1>?"
+        "Are there <!n1> <attrs1> <obj1>?"
     ],
     "tokens": [
         "obj1",
         "attrs1",
-        "color1"
+        "n1",
+        "!n1"
+
     ]
 }

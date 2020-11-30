@@ -14,11 +14,13 @@
         ]
     ],
     "templates": [
-        "What color is the <attrs1> <obj1>?"
+        "What color is the <attrs1> <obj1>?",
+        "Is the <attrs1> <obj1> <color1> or <!color1>?"
     ],
     "tokens": [
         "obj1",
         "attrs1",
-        "color1"
+        "color1",
+        "!color1"
     ]
 }

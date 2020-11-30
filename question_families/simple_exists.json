@@ -1,8 +1,6 @@
 {
     "name": "simple_exists",
-    "constraints": [
-        "max_length(attrs1, 2)"
-    ],
+    "constraints": [],
     "program":
     ["convert_bool",
         [

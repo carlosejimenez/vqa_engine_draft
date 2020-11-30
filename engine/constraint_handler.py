@@ -38,7 +38,10 @@ class ConstraintHandler:
         return detected == 1
 
     def max_length(self, attrs, max_len):
-        return len(attrs.intersection(utils.train_colors)) <= 0
+        return len(attrs) <= int(max_len)
 
     def exclude_color(self, attrs):
         return len(attrs.intersection(utils.train_colors)) == 0
+
+    def not_equal(self, val1, val2):
+        return val1 != val2

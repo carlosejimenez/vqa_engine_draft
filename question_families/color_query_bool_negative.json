@@ -1,5 +1,5 @@
 {
-    "name": "color_query_bool",
+    "name": "color_query_bool_negative",
     "constraints": [
         "unique(obj1)",
         "exclude_color(attrs1)",
@@ -10,7 +10,7 @@
         [
             ["member_of",
                 [
-                    "color1",
+                    "!color1",
                     ["colors",
                         [
                             "scene",
@@ -23,11 +23,12 @@
         ]
     ],
     "templates": [
-        "Is the <attrs1> <obj1> <color1>?"
+        "Is the <attrs1> <obj1> <!color1>?"
     ],
     "tokens": [
         "obj1",
         "attrs1",
-        "color1"
+        "color1",
+        "!color1"
     ]
 }

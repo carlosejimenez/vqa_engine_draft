@@ -22,37 +22,33 @@ class Handler:
         """
         assert type(program_tree) in [tuple, list], TypeError(f'Received type {type(program_tree)} instead of tuple.')
         assert len(program_tree) == 2, AssertionError(f'Format error. Malformed branch.')
-
-        stack = [(program_tree, [])]
-        # token_assignment['scene'] = scene
-        results = []
-        while len(stack) > 0:
-            evaluate = True
-            (func, args), program_args = stack.pop()
-            for ix, arg in enumerate(args):
-                if type(arg) in [tuple, list]:
-                    if len(results) > 0:
-                        val = results.pop()
-                        program_args.append(val)
-                    else:
-                        stack.append(((func, args), program_args))
-                        stack.append((arg, []))
-                        evaluate = False
-                        break
-                else:
-                    assert type(arg) is str, TypeError(f'Argument type not tuple or string.')
-                    if arg == 'scene':
-                        val = scene
-                    else:
-                        val = token_assignment[arg]
-                    program_args.append(val)
-            if evaluate:
-                result = getattr(self, func)(*program_args)
-                results.append(result)
-        return results.pop()
-
-
-
+        # stack = [(program_tree, [])]
+        # # token_assignment['scene'] = scene
+        # results = []
+        # while len(stack) > 0:
+        #     evaluate = True
+        #     (func, args), program_args = stack.pop()
+        #     for ix, arg in enumerate(args):
+        #         if type(arg) in [tuple, list]:
+        #             if len(results) > 0:
+        #                 val = results.pop()
+        #                 program_args.append(val)
+        #             else:
+        #                 stack.append(((func, args), program_args))
+        #                 stack.append((arg, []))
+        #                 evaluate = False
+        #                 break
+        #         else:
+        #             assert type(arg) is str, TypeError(f'Argument type not tuple or string.')
+        #             if arg == 'scene':
+        #                 val = scene
+        #             else:
+        #                 val = token_assignment[arg]
+        #             program_args.append(val)
+        #     if evaluate:
+        #         result = getattr(self, func)(*program_args)
+        #         results.append(result)
+        # return results.pop()
 
         root, args = program_tree
         program_args = []
@@ -71,6 +67,10 @@ class Handler:
     @terminal(True)
     def equal(self, val1, val2):
         return val1 == val2
+
+    @terminal(True)
+    def member_of(self, element, in_set):
+        return element in in_set
 
     @terminal(True)
     def exists(self, scene, obj_name, attributes):
@@ -94,28 +94,35 @@ class Handler:
         """
         count = 0
         for obj_id, obj_data in scene['objects'].items():
-            if obj_name == obj_data['name']  and attributes.issubset(set(obj_data['attributes'])):
+            if obj_name == obj_data['name'] and attributes.issubset(set(obj_data['attributes'])):
                 count += 1
         return count
 
     @terminal(True)
     def color(self, scene, obj_name, attributes):
         """
-        Returns color of object.
+        Returns unique color of object.
+        """
+        colors = list(self.colors(scene, obj_name, attributes))
+        if len(colors) == 1:
+            return colors[0]
+        # assert len(color) == 1, ValueError(f'No color attribute found for object: {attributes} {obj_name}.')
+        else:
+            return None
+
+    @terminal(False)
+    def colors(self, scene, obj_name, attributes):
+        """
+        Returns all colors of object.
         """
         attr_map = utils.get_attribute_map(scene['objects'])
         objs = attr_map[(obj_name, attributes)]
         if len(objs) != 1:
-            return ''
+            return frozenset()
             # raise ValueError(f'FIXME: Constraints enforced for color.')
         obj_id = list(objs)[0]
         obj = scene['objects'][obj_id]
-        color = list(utils.get_color(obj))
-        if len(color) == 1:
-            return color[0]
-        # assert len(color) == 1, ValueError(f'No color attribute found for object: {attributes} {obj_name}.')
-        else:
-            return None
+        return utils.get_color(obj)
 
     @terminal(False)
     def related_objs(self, scene, obj_name, rel_name):

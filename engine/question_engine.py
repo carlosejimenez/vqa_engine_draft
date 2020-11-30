@@ -18,8 +18,7 @@ Inquiry types:
 
 """
 import re
-from random import choice
-
+from copy import deepcopy
 from collections import defaultdict
 from itertools import combinations, product
 from .program_handlers import Handler
@@ -27,13 +26,39 @@ from .constraint_handler import ConstraintHandler
 from . import utils
 
 
+def assign_functionals(objects, token_set, assignment):
+    new_assignment = deepcopy(assignment)
+    for i in range(len(token_set)):
+        token_obj_idx = str(i + 1)
+        for token in token_set[token_obj_idx]:
+            key = f'{token}{token_obj_idx}'
+            obj_key = f'obj{token_obj_idx}'
+            assert obj_key in new_assignment, KeyError(f'Cannot assign count token n{token_obj_idx}, since'
+                                                       f' obj{token_obj_idx} isn\'t assigned.')
+            obj_name = new_assignment[obj_key]
+            if token == 'n':
+                attrs_name = f'attrs{token_obj_idx}'
+                attrs_idx = frozenset() if attrs_name not in new_assignment else new_assignment[attrs_name]
+                val = utils.get_count(objects, obj_name, attrs_idx)
+            elif token == '!n':
+                attrs_name = f'attrs{token_obj_idx}'
+                attrs_idx = frozenset() if attrs_name not in new_assignment else new_assignment[attrs_name]
+                val = utils.get_random_count(utils.get_count(objects, obj_name, attrs_idx))
+            else:
+                raise ValueError(f'Functional token name unknown: {token}')
+            new_assignment[key] = val
+    key_list = sorted(new_assignment.keys())
+    return key_list, [new_assignment[k] for k in key_list]
+
+
 def assign_tokens(objects, token_set, constraints):
     """
     Returns a list of all possible token assignments (dictionaries).
     """
     constraint_handler = ConstraintHandler(objects)
+    functional_tokens = {'n', '!n', }
+    func_token_set = {k: set() for k in token_set}
     all_assignments = set()  # use set to absorb duplicates.
-    all_assignments2 = set()  # use set to absorb duplicates.
     for obj_ids in combinations(list(objects.keys()), len(token_set)):
         assignments = dict()
         for i in range(len(token_set)):
@@ -54,14 +79,20 @@ def assign_tokens(objects, token_set, constraints):
                                                         # utils.get_color(obj_i) is an empty frozenset.
                     val = utils.get_color(obj_i)        # Not wrapping instantiates the product of assignment values
                                                         # with individual elements of val, and only if len(val) != 0
+                elif token == '!color':
+                    val = utils.get_random_color(obj_i, exclude=utils.get_color(obj_i))
+                elif token in functional_tokens:
+                    func_token_set[token_obj_idx].add(token)
+                    continue
                 else:
                     raise ValueError(f'Token name unknown: {token}')
                 assignments[key] = val
         key_list = sorted(assignments.keys())  # sorted ensures assignments are unique when added to all_assignments
         assignment_values = product(*[assignments[key] for key in key_list])
         for assignment in assignment_values:
-            if constraint_handler.check_constraints(constraints, dict(zip(key_list, assignment))):
-                all_assignments.add(tuple(zip(key_list, assignment)))
+            new_key_list, new_assignment = assign_functionals(objects, func_token_set, dict(zip(key_list, assignment)))
+            if constraint_handler.check_constraints(constraints, dict(zip(new_key_list, new_assignment))):
+                all_assignments.add(tuple(zip(new_key_list, new_assignment)))
     return list(map(dict, all_assignments))
 
 
@@ -69,6 +100,7 @@ def assign_random(objects, token_set, constraints):
     """
     Returns a list of all possible token assignments (dictionaries).
     """
+    functional_tokens = ['n', ]
     constraint_handler = ConstraintHandler(objects)
     all_assignments = set()  # use set to absorb duplicates.
     for obj_ids in combinations(list(objects.keys()), len(token_set)):
@@ -93,9 +125,21 @@ def assign_random(objects, token_set, constraints):
                                                         # utils.get_color(obj_i) is an empty frozenset.
                     val = utils.get_random_color()  # Not wrapping instantiates the product of assignment values
                                                          # with individual elements of val, and only if len(val) != 0
+                elif token in functional_tokens:
+                    continue
                 else:
                     raise ValueError(f'Token name unknown: {token}')
                 assignments[key] = val
+        # for i in range(len(token_set)):
+        #     token_obj_idx = str(i + 1)
+        #     for token in token_set[token_obj_idx]:
+        #         if token in functional_tokens:
+        #             if token == 'n':
+        #                 val = utils.get_count(objects, assignments[''])
+        #             else:
+        #                 raise ValueError(f'Functional token name unknown: {token}')
+        #             assignments[key] = val
+
         key_list = list(assignments.keys())
         assignment_values = product(*[assignments[key] for key in key_list])
         for assignment in assignment_values:
@@ -140,12 +184,12 @@ class QGenerator:
         objects_present = set(map(lambda x: x['name'], scene['objects'].values()))
         token_sets = defaultdict(set)
         for token in tokens:
-            match = re.match(r'^([a-z]+)(\d+)$', token)
+            match = re.match(r'^([!]?)([a-z]+)(\d+)$', token)
             if not match:
                 assert token == 'scene', AssertionError(f'Unrecognized special token: {token}.')
-            assert len(match.groups()) == 2, AssertionError(f'Malformed input token.')
-            token_type, object_number = match.groups()
-            token_sets[object_number].add(token_type)
+            assert len(match.groups()) == 3, AssertionError(f'Malformed input token.')
+            rand, token_type, object_number = match.groups()
+            token_sets[object_number].add(rand + token_type)
         if random:
             return assign_random(scene['objects'], token_sets, constraints)
         else:
@@ -156,11 +200,13 @@ class QGenerator:
         def clean(string):
             return ' '.join(string.split())
 
-        pattern = re.compile(r'(<([a-z]+\d+)>)')
+        pattern = re.compile(r'(<([!]?[a-z]+\d+)>)')
         text = template
         for token, token_name in pattern.findall(template):
             value = assignment[token_name]
             if type(value) in [frozenset]:  # If value is a set of attributes.
                 value = ' '.join(value)
+            elif type(value) != str:
+                value = str(value)  # for some numeric assignments
             text = text.replace(token, value)
         return clean(text)
